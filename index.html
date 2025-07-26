@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinayaka Fabrication - Quotation Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e8f2ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 794px; /* A4 width at 96 DPI */
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .company-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px 25px; /* Reduced padding */
+            text-align: center;
+            position: relative;
+        }
+
+        .company-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="60" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .company-header h1 {
+            font-size: 2.5rem; /* Reduced from 3rem */
+            margin-bottom: 6px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .company-header .subtitle {
+            font-size: 1.1rem; /* Reduced from 1.3rem */
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+            font-weight: 300;
+        }
+
+        .quotation-content {
+            padding: 25px; /* Reduced from 35px */
+        }
+
+        .quotation-header {
+            margin-bottom: 25px; /* Reduced from 35px */
+            padding: 20px; /* Reduced from 25px */
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 10px;
+            border-left: 5px solid #3b82f6;
+        }
+
+        .quotation-title {
+            font-size: 2rem; /* Reduced from 2.5rem */
+            color: #1e3a8a;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            margin-bottom: 20px; /* Reduced from 25px */
+            text-shadow: 1px 1px 2px rgba(30, 58, 138, 0.1);
+        }
+
+        .quotation-details {
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+        }
+
+        .details-block {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            padding: 15px 20px; /* Reduced padding */
+            border-radius: 8px;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
+            min-width: 260px; /* Reduced from 280px */
+        }
+
+        .detail-item {
+            margin-bottom: 8px; /* Reduced from 10px */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-right: 15px;
+            font-size: 16px; /* Increased from 14px for better readability */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 16px; /* Increased from 14px */
+        }
+
+        .editable-quotation-no {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed #1e3a8a;
+            padding: 2px 5px;
+            font-weight: 600;
+            color: #1e293b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px; /* Increased from 14px */
+        }
+
+        .editable-quotation-no:focus {
+            outline: none;
+            border-bottom: 2px solid #1e3a8a;
+            background: rgba(30, 58, 138, 0.05);
+        }
+
+        .bill-to-section {
+            background: #f1f5f9;
+            padding: 18px; /* Reduced from 20px */
+            border-radius: 8px;
+            margin-bottom: 25px; /* Reduced from 30px */
+            border-left: 4px solid #10b981;
+        }
+
+        .bill-to-section h3 {
+            color: #059669;
+            margin-bottom: 12px; /* Reduced from 15px */
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .editable-input {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-weight: 500;
+            color: #1e293b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .editable-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .editable-input::placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* PDF-specific styles that hide dotted lines */
+        .pdf-mode .editable-input {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .pdf-mode .editable-quotation-no {
+            border: none !important;
+            background: transparent !important;
+        }
+
+        .items-section {
+            margin-bottom: 25px; /* Reduced from 30px */
+        }
+
+        .section-title {
+            font-size: 1.3rem; /* Reduced from 1.5rem */
+            color: #1e293b;
+            margin-bottom: 20px; /* Reduced from 25px */
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 5px;
+            height: 25px; /* Reduced from 30px */
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+            margin-right: 15px;
+            border-radius: 3px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 18px; /* Reduced from 20px */
+        }
+
+        .items-table th {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 15px 12px; /* Reduced padding */
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem; /* Slightly reduced */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+
+        .items-table th::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 100%);
+        }
+
+        .items-table td {
+            padding: 12px; /* Reduced from 15px */
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .items-table tr:hover {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        .items-table tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        .items-table input {
+            width: 100%;
+            padding: 8px 10px; /* Reduced padding */
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #ffffff;
+        }
+
+        .items-table input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: #f8fafc;
+        }
+
+        .total-cell {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+            font-weight: 600;
+            color: #1e3a8a;
+            text-align: center;
+        }
+
+        .item-number-cell {
+            background: #f1f5f9 !important;
+            font-weight: 600;
+            color: #475569;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px; /* Reduced from 25px */
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px; /* Reduced padding */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger:hover {
+            transform: scale(1.1);
+        }
+
+        .transportation-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 20px; /* Reduced from 25px */
+            border-radius: 10px;
+            margin-bottom: 20px; /* Reduced from 25px */
+            border-left: 5px solid #f59e0b;
+        }
+
+        .transportation-input {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 12px; /* Reduced from 15px */
+        }
+
+        .transportation-input label {
+            font-weight: 600;
+            color: #92400e;
+            min-width: 150px;
+            font-size: 1rem; /* Reduced from 1.1rem */
+        }
+
+        .transportation-input input {
+            padding: 10px 14px; /* Reduced padding */
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            width: 140px;
+            font-size: 16px;
+            font-weight: 500;
+            background: white;
+        }
+
+        .transportation-input input:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .gst-section {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 20px; /* Reduced from 25px */
+            border-radius: 10px;
+            margin-bottom: 20px; /* Reduced from 25px */
+            border-left: 5px solid #0ea5e9;
+        }
+
+        .gst-input {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 12px; /* Reduced from 15px */
+        }
+
+        .gst-input label {
+            font-weight: 600;
+            color: #0c4a6e;
+            min-width: 120px;
+            font-size: 1rem; /* Reduced from 1.1rem */
+        }
+
+        .gst-input input {
+            padding: 10px 14px; /* Reduced padding */
+            border: 2px solid #bae6fd;
+            border-radius: 8px;
+            width: 140px;
+            font-size: 16px;
+            font-weight: 500;
+            background: white;
+        }
+
+        .gst-input input:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 20px; /* Reduced from 25px */
+            border-radius: 10px;
+            margin-top: 20px; /* Reduced from 25px */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px; /* Reduced from 12px */
+            padding: 6px 0; /* Reduced from 8px */
+            position: relative;
+            z-index: 1;
+        }
+
+        .summary-row.total {
+            border-top: 2px solid rgba(255, 255, 255, 0.3);
+            padding-top: 15px; /* Reduced from 20px */
+            margin-top: 15px; /* Reduced from 20px */
+            font-size: 1.2rem; /* Reduced from 1.3rem */
+            font-weight: 700;
+        }
+
+        .company-details-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px; /* Reduced from 30px */
+            margin-top: 25px; /* Reduced from 30px */
+            padding: 20px; /* Reduced from 25px */
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 10px;
+            border-left: 5px solid #3b82f6;
+        }
+
+        .company-detail-section h3 {
+            color: #1e3a8a;
+            margin-bottom: 12px; /* Reduced from 15px */
+            font-size: 1rem; /* Reduced from 1.1rem */
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .company-detail-item {
+            margin-bottom: 6px; /* Reduced from 8px */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .company-detail-label {
+            font-weight: 600;
+            color: #475569;
+            min-width: 80px;
+        }
+
+        .company-detail-value {
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .download-section {
+            text-align: center;
+            padding: 20px; /* Reduced from 25px */
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 10px;
+            margin-top: 20px; /* Reduced from 25px */
+        }
+
+        /* Page break for PDF */
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+
+        @media (max-width: 768px) {
+            .quotation-details {
+                justify-content: center;
+                margin-top: 20px;
+            }
+
+            .details-block {
+                min-width: auto;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .company-details-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .items-table {
+                font-size: 12px;
+            }
+            
+            .items-table th,
+            .items-table td {
+                padding: 8px 6px;
+            }
+
+            .company-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .quotation-title {
+                font-size: 1.6rem;
+            }
+
+            .transportation-input,
+            .gst-input {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="company-header" id="companyHeader">
+            <h1>VINAYAKA FABRICATION</h1>
+            <p class="subtitle">Towers of Trust, Engineering Excellence</p>
+        </div>
+
+        <div class="quotation-content" id="quotationContent">
+            <div class="quotation-header">
+                <div class="quotation-title">QUOTATION</div>
+                <div class="quotation-details">
+                    <div class="details-block">
+                        <div class="detail-item">
+                            <span class="detail-label">Date:</span>
+                            <span class="detail-value" id="currentDate"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Quotation No:</span>
+                            <input type="text" class="editable-input" id="quotationNumber" placeholder="Enter Quotation number" style="width: 140px;">
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">GST No:</span>
+                            <span class="detail-value">36ALNPM1052G1Z6</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bill-to-section">
+                <h3>Bill To:</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <div class="detail-item" style="margin-bottom: 12px;">
+                            <span class="detail-label">Company:</span>
+                            <input type="text" class="editable-input" id="clientCompany" placeholder="Enter client company name" style="width: 200px;">
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Contact:</span>
+                            <input type="text" class="editable-input" id="clientContact" placeholder="Enter contact person" style="width: 200px;">
+                        </div>
+                    </div>
+                    <div>
+                    
+                        <div class="detail-item">
+                            <span class="detail-label">Address:</span>
+                            <input type="text" class="editable-input" id="clientAddress" placeholder="Enter address" style="width: 200px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="items-section">
+                <div class="controls">
+                    <h2 class="section-title">Quotation Items</h2>
+                    <button class="btn btn-primary" onclick="addRow()">+ Add New Item</button>
+                </div>
+
+                <table class="items-table" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%">Item No.</th>
+                            <th style="width: 45%">Description</th>
+                            <th style="width: 12%">Qty in Kg</th>
+                            <th style="width: 15%">Per KG</th>
+                            <th style="width: 15%">Line Total</th>
+                            <th style="width: 5%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        <tr>
+                            <td class="item-number-cell">1</td>
+                            <td><input type="text" class="description" placeholder="Enter detailed item description"></td>
+                            <td><input type="number" class="quantity" placeholder="0.00" step="0.01" onchange="calculateRowTotal(this)"></td>
+                            <td><input type="number" class="price" placeholder="0.00" step="0.01" onchange="calculateRowTotal(this)"></td>
+                            <td class="total-cell row-total">₹0.00</td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">×</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="transportation-section">
+                <div class="transportation-input">
+                    <label for="transportationCost">Transportation Cost (₹):</label>
+                    <input type="number" id="transportationCost" placeholder="0.00" step="0.01" onchange="calculateTotals()">
+                </div>
+                <p style="color: #92400e; font-size: 13px; margin-top: 8px;">
+                    <strong>Note:</strong> Transportation cost will be added to the subtotal before GST calculation
+                </p>
+            </div>
+
+            <div class="gst-section">
+                <div class="gst-input">
+                    <label for="gstPercent">GST Percentage (%):</label>
+                    <input type="number" id="gstPercent" placeholder="18.00" step="0.01" onchange="calculateTotals()">
+                </div>
+                <p style="color: #475569; font-size: 13px; margin-top: 8px;">
+                    <strong>Note:</strong> GST will be calculated on subtotal including transportation cost
+                </p>
+            </div>
+
+            <div class="summary">
+                <div class="summary-row">
+                    <span>Items Total:</span>
+                    <span id="itemsTotal">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Transportation Cost:</span>
+                    <span id="transportationAmount">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Subtotal (Items + Transportation):</span>
+                    <span id="subtotal">₹0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>GST Amount:</span>
+                    <span id="gstAmount">₹0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total Amount Inclusive GST:</span>
+                    <span id="totalAmount">₹0.00</span>
+                </div>
+            </div>
+
+            <div class="company-details-section">
+                <div class="company-detail-section">
+                    <h3>Our Details</h3>
+                    <div class="company-detail-item">
+                        <span class="company-detail-label">Phone:</span>
+                        <span class="company-detail-value">9000707021</span>
+                    </div>
+                    <div class="company-detail-item">
+                        <span class="company-detail-label">Our Website:</span>
+                        <span class="company-detail-value">www.vinayakafabrication.com</span>
+                    </div>
+                    <div class="company-detail-item">
+                        <span class="company-detail-label">Email:</span>
+                        <span class="company-detail-value">vinayakafabrication2003@gmail.com</span>
+                    </div>
+                </div>
+
+                <div class="company-detail-section">
+                    <h3>Bank Details</h3>
+                    <div class="company-detail-item">
+                        <span class="company-detail-label">Bank:</span>
+                        <span class="company-detail-value">Canara Bank, Basheer Bagh</span>
+                    </div>
+                    <div class="company-detail-item">
+                        <span class="company-detail-label">A/C:</span>
+                        <span class="company-detail-value">125001855753</span>
+                    </div>
+                    <div class="company-detail-item">
+                        <span class="company-detail-label">IFSC:</span>
+                        <span class="company-detail-value">CNRB0000878</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; padding: 18px; background: #f8fafc; border-radius: 8px;">
+                <p style="color: #475569; font-style: italic; margin-bottom: 8px;">
+                    "Make all checks payable to VINAYAKA FABRICATION"
+                </p>
+                <p style="color: #1e293b; font-weight: 600;">
+                    Thank you for your business!
+                </p>
+                <p style="color: #64748b; font-size: 13px; margin-top: 8px;">
+                    Should you have any enquiries concerning this invoice, please contact <strong>M SREENIVASULU REDDY</strong> on <strong>8161954123</strong>
+                </p>
+                <p style="color: #64748b; font-size: 13px; margin-top: 8px;">
+                    <strong>Plot No:217/A Phase-II, sector-III, IDA Cherlapally, Hyderabad, 500051</strong>
+                </p>
+            </div>
+        </div>
+
+        <div class="download-section">
+            <button class="btn btn-success" onclick="downloadPDF()" style="padding: 12px 30px; font-size: 16px;">
+                📄 Download Professional PDF
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let itemCounter = 1;
+        let quotationCounter = 1;
+
+        // Initialize the page
+        function init() {
+            setCurrentDate();
+            generateQuotationNumber();
+        }
+
+        // Set current date automatically based on calendar
+        function setCurrentDate() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-IN', options);
+        }
+
+        // Generate quotation number
+        function generateQuotationNumber() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const number = String(quotationCounter).padStart(3, '0');
+            document.getElementById('quotationNumber').value = `VF${year}-${number}`;
+            quotationCounter++;
+        }
+
+        // Add new row
+        function addRow() {
+            itemCounter++;
+            const tbody = document.getElementById('itemsBody');
+            const newRow = document.createElement('tr');
+            
+            newRow.innerHTML = `
+                <td class="item-number-cell">${itemCounter}</td>
+                <td><input type="text" class="description" placeholder="Enter detailed item description"></td>
+                <td><input type="number" class="quantity" placeholder="0.00" step="0.01" onchange="calculateRowTotal(this)"></td>
+                <td><input type="number" class="price" placeholder="0.00" step="0.01" onchange="calculateRowTotal(this)"></td>
+                <td class="total-cell row-total">₹0.00</td>
+                <td><button class="btn btn-danger" onclick="removeRow(this)">×</button></td>
+            `;
+            
+            tbody.appendChild(newRow);
+        }
+
+        // Remove row
+        function removeRow(button) {
+            const row = button.closest('tr');
+            row.remove();
+            updateItemNumbers();
+            calculateTotals();
+        }
+
+        // Update item numbers after deletion
+        function updateItemNumbers() {
+            const rows = document.querySelectorAll('#itemsBody tr');
+            rows.forEach((row, index) => {
+                row.querySelector('.item-number-cell').textContent = index + 1;
+            });
+            itemCounter = rows.length;
+        }
+
+        // Calculate total for a row
+        function calculateRowTotal(input) {
+            const row = input.closest('tr');
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const total = quantity * price;
+            
+            row.querySelector('.row-total').textContent = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            calculateTotals();
+        }
+
+        // Calculate all totals including transportation and GST
+        function calculateTotals() {
+            // Calculate items total
+            const rowTotals = document.querySelectorAll('.row-total');
+            let itemsTotal = 0;
+            
+            rowTotals.forEach(cell => {
+                const value = parseFloat(cell.textContent.replace('₹', '').replace(/,/g, '')) || 0;
+                itemsTotal += value;
+            });
+            
+            // Get transportation cost
+            const transportationCost = parseFloat(document.getElementById('transportationCost').value) || 0;
+            
+            // Calculate subtotal (items + transportation)
+            const subtotal = itemsTotal + transportationCost;
+            
+            // Get GST percentage and calculate GST amount
+            const gstPercent = parseFloat(document.getElementById('gstPercent').value) || 0;
+            const gstAmount = (subtotal * gstPercent) / 100;
+            
+            // Calculate final total
+            const totalAmount = subtotal + gstAmount;
+            
+            // Update display
+            document.getElementById('itemsTotal').textContent = `₹${itemsTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('transportationAmount').textContent = `₹${transportationCost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('subtotal').textContent = `₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('gstAmount').textContent = `₹${gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('totalAmount').textContent = `₹${totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+        // Generate PDF filename based on client company and date
+        function generatePDFFilename() {
+            const clientCompany = document.getElementById('clientCompany').value.trim();
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            
+            let companyName = 'Quotation';
+            if (clientCompany) {
+                // Remove special characters and replace spaces with underscores
+                companyName = clientCompany.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+            }
+            
+            return `${companyName}_${day}/${month}/${year}`;
+        }
+
+        // Download as PDF with proper two-page layout
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            
+            // Add PDF mode class to hide dotted lines
+            document.body.classList.add('pdf-mode');
+            
+            try {
+                // Create PDF with A4 dimensions
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Capture the entire container
+                const element = document.querySelector('.container');
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                
+                // A4 dimensions in mm
+                const pageWidth = 210;
+                const pageHeight = 297;
+                
+                // Calculate image dimensions
+                const imgWidth = pageWidth;
+                const imgHeight = (canvas.height * pageWidth) / canvas.width;
+                
+                // If content fits in one page, use one page; otherwise, use two pages
+                if (imgHeight <= pageHeight) {
+                    // Single page
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                } else {
+                    // Two pages - split the content
+                    const firstPageHeight = pageHeight;
+                    const secondPageHeight = imgHeight - pageHeight;
+                    
+                    // First page
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                    
+                    // Second page
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, -firstPageHeight, imgWidth, imgHeight);
+                }
+                
+                // Generate filename and save
+                const filename = generatePDFFilename();
+                pdf.save(`${filename}.pdf`);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            } finally {
+                // Clean up
+                document.body.classList.remove('pdf-mode');
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
